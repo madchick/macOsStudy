@@ -57,7 +57,7 @@ public struct BroadcastView: View {
                     }
                     .padding()
                 }
-                .onChange(of: wsService.broadcastMessages.count) { _ in
+                .onChange(of: wsService.broadcastMessages.count) {
                     if let last = wsService.broadcastMessages.last {
                         withAnimation {
                             proxy.scrollTo(last.id, anchor: .bottom)

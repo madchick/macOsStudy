@@ -135,7 +135,7 @@ public struct RoomChatView: View {
                         }
                         .padding()
                     }
-                    .onChange(of: currentMessages.count) { _ in
+                    .onChange(of: currentMessages.count) {
                         if let last = currentMessages.last {
                             withAnimation {
                                 proxy.scrollTo(last.id, anchor: .bottom)

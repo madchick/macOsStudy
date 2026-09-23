@@ -73,7 +73,7 @@ public struct DirectMessageView: View {
                     }
                     .padding()
                 }
-                .onChange(of: wsService.directMessages.count) { _ in
+                .onChange(of: wsService.directMessages.count) {
                     if let last = wsService.directMessages.last {
                         withAnimation {
                             proxy.scrollTo(last.id, anchor: .bottom)
