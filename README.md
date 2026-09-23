@@ -1,1 +1,1 @@
-macOS Study code
+macOS Desktop Application dev test code
