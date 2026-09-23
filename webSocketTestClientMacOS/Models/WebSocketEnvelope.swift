@@ -1,7 +1,7 @@
 import Foundation
 
 /// WebSocket 메시지 타입 정의 (WEBSOCKET_SPEC.md 규격)
-public enum WebSocketMessageType: String, Codable, CaseIterable, Identifiable {
+public enum WebSocketMessageType: String, Codable, CaseIterable, Identifiable, Sendable {
     case ping = "PING"
     case pong = "PONG"
     case echo = "ECHO"
@@ -32,7 +32,7 @@ public enum WebSocketMessageType: String, Codable, CaseIterable, Identifiable {
 }
 
 /// JSON의 임의의 값을 표현할 수 있는 유연한 Codable 타입
-public enum AnyCodableValue: Codable, Equatable, CustomStringConvertible {
+public enum AnyCodableValue: Codable, Equatable, CustomStringConvertible, Sendable {
     case string(String)
     case int(Int)
     case double(Double)
@@ -119,7 +119,7 @@ public enum AnyCodableValue: Codable, Equatable, CustomStringConvertible {
 }
 
 /// WEBSOCKET_SPEC.md 2.1 표준 메시지 스키마 (JSON Envelope)
-public struct WebSocketEnvelope: Codable, Identifiable, Equatable {
+public struct WebSocketEnvelope: Codable, Identifiable, Equatable, Sendable {
     public var id: UUID = UUID()
     
     public var type: String
@@ -196,7 +196,7 @@ public struct WebSocketEnvelope: Codable, Identifiable, Equatable {
 }
 
 /// SYSTEM_NOTICE 접속 정보 페이로드 모델
-public struct SystemNoticePayload: Codable {
+public struct SystemNoticePayload: Codable, Sendable {
     public let sessionId: String?
     public let userId: String?
     public let clientIp: String?

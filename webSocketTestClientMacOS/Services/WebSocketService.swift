@@ -13,11 +13,62 @@ public enum ConnectionStatus: String {
 public class WebSocketService: NSObject, ObservableObject {
     // MARK: - Published Properties (UI 상태 바인딩)
     @Published public var status: ConnectionStatus = .disconnected
-    @Published public var serverUrlString: String = "ws://localhost/ws/"
+    @Published public var serverUrlString: String = "ws://localhost:8080/ws"
     @Published public var userId: String = "mac_user"
     @Published public var nickname: String = "맥북유저"
     @Published public var autoReconnect: Bool = true
     @Published public var autoPingEnabled: Bool = true
+    
+    // MARK: - Port Helper
+    /// 현재 접속 URL에서 포트 번호 감지 (80, 8080 등)
+    public var currentPort: Int? {
+        if let components = URLComponents(string: serverUrlString), let port = components.port {
+            return port
+        }
+        if let regex = try? NSRegularExpression(pattern: #":(\d+)"#),
+           let match = regex.firstMatch(in: serverUrlString, range: NSRange(serverUrlString.startIndex..., in: serverUrlString)),
+           let range = Range(match.range(at: 1), in: serverUrlString),
+           let port = Int(serverUrlString[range]) {
+            return port
+        }
+        if serverUrlString.hasPrefix("ws://") || serverUrlString.hasPrefix("http://") {
+            return 80
+        }
+        return nil
+    }
+    
+    /// 접속 URL의 호스트와 경로를 유지하며 포트 번호를 변경
+    public func updatePort(_ newPort: Int) {
+        let trimmed = serverUrlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            serverUrlString = "ws://localhost:\(newPort)/ws"
+            return
+        }
+        
+        let portPattern = #"(ws[s]?:\/\/[^\/:]+)(?::\d+)?(.*)"#
+        if let regex = try? NSRegularExpression(pattern: portPattern, options: .caseInsensitive),
+           let match = regex.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)),
+           let hostRange = Range(match.range(at: 1), in: trimmed),
+           let pathRange = Range(match.range(at: 2), in: trimmed) {
+            let hostPart = String(trimmed[hostRange])
+            var pathPart = String(trimmed[pathRange])
+            if pathPart.isEmpty {
+                pathPart = "/ws"
+            }
+            serverUrlString = "\(hostPart):\(newPort)\(pathPart)"
+            return
+        }
+        
+        if var components = URLComponents(string: trimmed) {
+            components.port = newPort
+            if let newUrl = components.string {
+                serverUrlString = newUrl
+                return
+            }
+        }
+        
+        serverUrlString = "ws://localhost:\(newPort)/ws"
+    }
     
     // 세션 정보 (서버 SYSTEM_NOTICE로부터 획득)
     @Published public var currentSessionId: String? = nil
@@ -121,9 +172,8 @@ public class WebSocketService: NSObject, ObservableObject {
     
     private func listenForMessages() {
         webSocketTask?.receive { [weak self] result in
-            guard let self = self else { return }
-            
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
                 switch result {
                 case .success(let message):
                     switch message {
@@ -307,13 +357,14 @@ public class WebSocketService: NSObject, ObservableObject {
             guard let jsonString = String(data: data, encoding: .utf8) else { return }
             
             let message = URLSessionWebSocketTask.Message.string(jsonString)
+            let envelopeType = envelope.type
             task.send(message) { [weak self] error in
-                guard let self = self else { return }
-                Task { @MainActor in
+                Task { @MainActor [weak self] in
+                    guard let self = self else { return }
                     if let error = error {
                         self.appendLog(
                             direction: .outbound,
-                            type: envelope.type,
+                            type: envelopeType,
                             summary: "전송 실패: \(error.localizedDescription)",
                             rawJson: jsonString,
                             isError: true
@@ -321,8 +372,8 @@ public class WebSocketService: NSObject, ObservableObject {
                     } else {
                         self.appendLog(
                             direction: .outbound,
-                            type: envelope.type,
-                            summary: "[\(envelope.type)] 전송 성공",
+                            type: envelopeType,
+                            summary: "[\(envelopeType)] 전송 성공",
                             rawJson: jsonString
                         )
                     }
@@ -518,7 +569,7 @@ public class WebSocketService: NSObject, ObservableObject {
 
 // MARK: - URLSessionWebSocketDelegate
 extension WebSocketService: URLSessionWebSocketDelegate {
-    public func urlSession(
+    nonisolated public func urlSession(
         _ session: URLSession,
         webSocketTask: URLSessionWebSocketTask,
         didOpenWithProtocol protocol: String?
@@ -535,7 +586,7 @@ extension WebSocketService: URLSessionWebSocketDelegate {
         }
     }
     
-    public func urlSession(
+    nonisolated public func urlSession(
         _ session: URLSession,
         webSocketTask: URLSessionWebSocketTask,
         didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,

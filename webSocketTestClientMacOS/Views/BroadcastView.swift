@@ -144,7 +144,7 @@ public struct ChatBubbleView: View {
                         .foregroundColor(.primary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Color(NSColor.controlHighlightColor))
+                        .background(Color(NSColor.separatorColor))
                         .cornerRadius(14)
                 }
 

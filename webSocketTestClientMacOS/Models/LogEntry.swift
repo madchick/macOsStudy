@@ -1,7 +1,7 @@
 import Foundation
 
 /// 로그 메시지 방향
-public enum LogDirection: String, Codable {
+public enum LogDirection: String, Codable, Hashable, Sendable {
     case inbound = "IN"
     case outbound = "OUT"
     case system = "SYS"
@@ -16,7 +16,7 @@ public enum LogDirection: String, Codable {
 }
 
 /// 콘솔 모니터링용 통신 로그 엔트리
-public struct LogEntry: Identifiable, Equatable {
+public struct LogEntry: Identifiable, Equatable, Hashable, Sendable {
     public let id: UUID
     public let timestamp: Date
     public let direction: LogDirection
@@ -51,7 +51,7 @@ public struct LogEntry: Identifiable, Equatable {
 }
 
 /// 채팅 화면 표시용 메시지 모델
-public struct ChatMessageItem: Identifiable, Equatable {
+public struct ChatMessageItem: Identifiable, Equatable, Hashable, Sendable {
     public let id: UUID
     public let sender: String
     public let text: String
